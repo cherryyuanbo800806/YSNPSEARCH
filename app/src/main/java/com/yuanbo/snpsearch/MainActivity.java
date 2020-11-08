@@ -3,7 +3,9 @@ package com.yuanbo.snpsearch;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.annotation.SuppressLint;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.res.AssetManager;
 import android.database.Cursor;
 import android.database.SQLException;
@@ -16,6 +18,8 @@ import android.os.Handler;
 import android.os.Message;
 import android.text.method.ReplacementTransformationMethod;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -269,4 +273,48 @@ public class MainActivity extends AppCompatActivity {
         return false;
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.action_about) {
+            showNormalDialog("版本: " + BuildConfig.VERSION_NAME);
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    private void showNormalDialog(String msg){
+        //创建dialog构造器
+        AlertDialog.Builder normalDialog = new AlertDialog.Builder(this);
+        //设置title
+        //normalDialog.setTitle(getString(R.string.dialog_normal_text));
+        //设置icon
+        //normalDialog.setIcon(R.mipmap.ic_launcher_round);
+        //设置内容
+        normalDialog.setMessage(msg);
+        //设置按钮
+        normalDialog.setPositiveButton(getString(R.string.dialog_btn_confirm_text)
+                , new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                    }
+                });
+        normalDialog.setCancelable(false);
+        //创建并显示
+        normalDialog.create().show();
+    }
 }
