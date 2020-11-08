@@ -143,14 +143,18 @@ public class MainActivity extends AppCompatActivity {
 
                         //snp_to_search.toUpperCase();
                         while(i < hgList.length){
-                            if(searchInDB(hgList[i], input_text))
-                                break;
-                            System.out.println("SNP after searching = " + input_text);
+                            int index = 0;
+                            while((index = searchInDB(hgList[i], input_text, index)) != -1){
+                                strSNP += "\n\n";
+                                index++;
+                            }
                             i++;
                         }
 
-                        if(i >= hgList.length)
-                            strSNP = input_text + "查找不到";
+                        if(strSNP.length() == 0) {
+                            strSNP = "没有搜索到";
+                        }
+
                         Message msg=Message.obtain();
                         msg.what = MESSAGE_UPDATE_SEARCH_RESULT;
                         handler.sendMessage(msg);
@@ -160,65 +164,74 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    protected boolean searchInDB(String hgName, String input_text) {
+    protected int searchInDB(String hgName, String inputText, int startIdx) {
         Cursor cursor;
-        boolean result = true;
+        int firstFoundIndex = -1;
         String snp_to_search;
         int round = 0;
+        boolean moveResult;
+        int count;
 
-        if(input_text.equals(hgName)){
-            strSNP = input_text;
-            return true;
+        if(inputText.equals(hgName)){
+            strSNP = inputText;
+            return -1;
         }
 
-        snp_to_search = input_text;
+        snp_to_search = inputText;
 
         dbHelper.openDatabase(hgName + ".db");
         if(dbHelper.database == null)
-            return false;
+            return -1;
         cursor = dbHelper.database.query("SNP",null,null,null,null,null,null);
+        count = cursor.getCount();
+        if(startIdx >= count){
+            return -1;
+        }
 
         while(true) {
             System.out.println("SNP to be searched = " + snp_to_search);
             if (snp_to_search.equals("None") ){
-                //strSNP += hgNmae;
-                result = true;
                 break;
             }
-            strSNP += (snp_to_search + " ");
-            //判断游标是否为空
-            if (cursor.moveToFirst()) {//遍历游标，id中查找
-                String alias_id = null, snp_to_search_next = null;
-                boolean found_in_rsids = false;
-                int count = cursor.getCount(), i;
 
-                for (i = 0; i < count ; i++) {
+            //判断游标是否为空
+            moveResult = (round == 0) ? moveResult = cursor.moveToPosition(startIdx) : cursor.moveToFirst();
+            if (moveResult) {//遍历游标，id中查找
+                String alias_id = null, parent = null;
+                boolean found_in_rsids = false;
+
+                int i = (round == 0) ? startIdx : 0;
+
+                for (; i < count ; i++) {
                     String id = cursor.getString(0); //get id
                     //System.out.println("index = " + i + " " + id);
                     if(id.equals(snp_to_search) || snpIsIn(id, snp_to_search)){// check if the snp is in id
-                        snp_to_search = cursor.getString(5);
+                        parent = cursor.getString(5);
                         break;
                     }
-                    if(round > 0) { // first round would go to check the rsids
+                    if(round > 0) { // first round should go to check the rsids
                         cursor.move(1);
                         continue;
                     }
                     String rsids = cursor.getString(3); //get rsids
                     if(snpIsIn(rsids, snp_to_search)) {// check if the snp is in rsids
                         alias_id = id;
-                        snp_to_search_next = cursor.getString(5);
+                        parent = cursor.getString(5);
                         found_in_rsids = true;
+                        break;
                     }
                     cursor.move(1);
                 }
-                if( i < count) {// found in id
-                    //strSNP += "不是" + hgName + "系";
-                    continue;
-                 }else if(found_in_rsids) {
-                    strSNP += ("(" + alias_id + ") ");
-                    snp_to_search = snp_to_search_next;
-                }else{
-                    result = false;
+                if( i < count) {// found in id or rsids
+                    strSNP += (snp_to_search + " ");
+                    if(found_in_rsids) {
+                        strSNP += ("(" + alias_id + ") ");
+                    }
+                    if(round == 0){ // record the cursor index of inputText
+                        firstFoundIndex = i;
+                    }
+                    snp_to_search = parent;
+                 }else {
                     break;
                 }
             }
@@ -226,7 +239,7 @@ public class MainActivity extends AppCompatActivity {
         }
         cursor.close();
         dbHelper.closeDatabase();
-        return result;
+        return firstFoundIndex;
     }
 
     protected boolean snpIsIn(String rsids, String snp_to_search) {
