@@ -39,9 +39,7 @@ class DBManager {
 
     DBManager(Context context) {
         this.context = context;
-        APP_DATA_PATH = "/data"
-                + Environment.getDataDirectory().getAbsolutePath() + "/"
-                + context.getPackageName();
+        APP_DATA_PATH = context.getFilesDir().getAbsolutePath();
     }
 
     public void openDatabase() {
@@ -54,7 +52,7 @@ class DBManager {
 
     private SQLiteDatabase internalOpenDatabase(String dbName) {
         String db_full_path = APP_DATA_PATH + "/" + dbName;
-        //System.out.println("db_full_path = " + Environment.getDataDirectory().getAbsolutePath());
+        //System.out.println("db_full_path = " + db_full_path);
         try {
             if (!(new File(db_full_path).exists())) {//判断数据库文件是否存在，若不存在则执行导入，否则直接打开数据库
                 //InputStream is = this.context.getResources().openRawResource(R.raw.activity_main); //欲导入的数据库
