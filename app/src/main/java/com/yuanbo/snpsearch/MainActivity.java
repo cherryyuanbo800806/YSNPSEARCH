@@ -57,23 +57,28 @@ class DBManager {
     private SQLiteDatabase internalOpenDatabase(String dbName) {
         String db_full_path = APP_DATA_PATH + "/" + dbName;
         //System.out.println("db_full_path = " + db_full_path);
+        if (!(new File(db_full_path).exists())) {//判断数据库文件是否存在，若不存在则执行导入，否则直接打开数据库
+            //InputStream is = this.context.getResources().openRawResource(R.raw.activity_main); //欲导入的数据库
+            copyDBFile(dbName);
+        }
+        return SQLiteDatabase.openOrCreateDatabase(db_full_path,
+                null);
+    }
+
+    public void copyDBFile(String dbName) {
         try {
-            if (!(new File(db_full_path).exists())) {//判断数据库文件是否存在，若不存在则执行导入，否则直接打开数据库
-                //InputStream is = this.context.getResources().openRawResource(R.raw.activity_main); //欲导入的数据库
-                AssetManager am = null;
-                am = this.context.getAssets();
-                InputStream is = am.open(dbName);
-                FileOutputStream fos = new FileOutputStream(db_full_path);
-                byte[] buffer = new byte[BUFFER_SIZE];
-                int count = 0;
-                while ((count = is.read(buffer)) > 0) {
-                    fos.write(buffer, 0, count);
-                }
-                fos.close();
-                is.close();
+            String db_full_path = APP_DATA_PATH + "/" + dbName;
+            AssetManager am = null;
+            am = this.context.getAssets();
+            InputStream is = am.open(dbName);
+            FileOutputStream fos = new FileOutputStream(db_full_path);
+            byte[] buffer = new byte[BUFFER_SIZE];
+            int count = 0;
+            while ((count = is.read(buffer)) > 0) {
+                fos.write(buffer, 0, count);
             }
-            return SQLiteDatabase.openOrCreateDatabase(db_full_path,
-                    null);
+            fos.close();
+            is.close();
         } catch (FileNotFoundException e) {
             Log.e("Database", "File not found");
             e.printStackTrace();
@@ -81,10 +86,7 @@ class DBManager {
             Log.e("Database", "IO exception");
             e.printStackTrace();
         }
-        return null;
     }
-//do something else here<br>
-
     public void closeDatabase() {
         database.close();
     }
@@ -289,6 +291,11 @@ public class MainActivity extends AppCompatActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_about) {
+            int i = 0;
+            while(i < hgList.length){
+                dbHelper.copyDBFile(hgList[i]);
+                i++;
+            }
             showNormalDialog("版本: " + BuildConfig.VERSION_NAME);
             return true;
         }
